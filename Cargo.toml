@@ -1,5 +1,5 @@
 [package]
-name = "yew-c3"
+name = "yew-charts"
 version = "0.1.0"
 authors = ["Patrick White <patrick@patrickwhite.org>"]
 edition = "2018"
