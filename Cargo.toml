@@ -29,6 +29,11 @@ yew = "0.17.3"
 charts = { version = "0.3.0", git = "https://github.com/ubamrein/rustplotlib" }
 svg = "0.7.1"
 web-sys = { version = "0.3.44", features = ["Element", "Node"]}
+plotters = "0.2.15"
+derive_deref = "1.1.1"
+thiserror = "1.0.20"
+png = "0.16.7"
+base64 = "0.12.3"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.17"
