@@ -2,7 +2,7 @@ use derive_deref::{Deref, DerefMut};
 use plotters::drawing::backend::{BackendCoord, BackendStyle};
 use plotters::drawing::{backend::DrawingErrorKind, DrawingBackend};
 use plotters::style::text_anchor::{HPos, Pos, VPos};
-use plotters::style::{FontTransform, FontStyle, Color};
+use plotters::style::{Color, FontStyle, FontTransform};
 use thiserror::Error;
 use yew::prelude::*;
 
@@ -32,22 +32,37 @@ fn make_svg_color<C: Color>(color: &C) -> String {
     return format!("#{:02X}{:02X}{:02X}", r, g, b);
 }
 
-fn make_style<S: BackendStyle>(style: &S) -> String {
-    format!(
-        "stroke:{}; stroke-width:{}",
-        make_svg_color(&style.as_color().to_rgba()),
-        style.stroke_width()
-    )
+pub struct VTagWrapper<'a> {
+    pub el: &'a mut yew::virtual_dom::VTag,
+    pub width: u32,
+    pub height: u32,
 }
 
-#[derive(Deref, DerefMut)]
-pub struct VTagWrapper<'a>(pub &'a mut yew::virtual_dom::VTag);
+impl<'a> VTagWrapper<'a> {
+    pub fn new(el: &'a mut yew::virtual_dom::VTag, width: u32, height: u32) -> Self {
+        Self { el, width, height }
+    }
+}
+
+impl<'a> std::ops::Deref for VTagWrapper<'a> {
+    type Target = yew::virtual_dom::VTag;
+
+    fn deref(&self) -> &Self::Target {
+        self.el
+    }
+}
+
+impl<'a> std::ops::DerefMut for VTagWrapper<'a> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.el
+    }
+}
 
 impl<'a> DrawingBackend for VTagWrapper<'a> {
     type ErrorType = Error;
 
     fn get_size(&self) -> (u32, u32) {
-        (800, 600)
+        (self.width, self.height)
     }
 
     fn ensure_prepared(&mut self) -> Result<(), DrawingErrorKind<Self::ErrorType>> {
@@ -131,10 +146,7 @@ impl<'a> DrawingBackend for VTagWrapper<'a> {
         Ok(())
     }
 
-    fn draw_path<
-        S: BackendStyle,
-        I: IntoIterator<Item = BackendCoord>,
-    >(
+    fn draw_path<S: BackendStyle, I: IntoIterator<Item = BackendCoord>>(
         &mut self,
         path: I,
         style: &S,
@@ -238,7 +250,8 @@ impl<'a> DrawingBackend for VTagWrapper<'a> {
         let font_weight = match font.get_style() {
             FontStyle::Bold => "bold",
             _ => "normal",
-        }.to_string();
+        }
+        .to_string();
 
         let font_style = match font.get_style() {
             FontStyle::Bold => "normal".to_string(),
@@ -247,18 +260,11 @@ impl<'a> DrawingBackend for VTagWrapper<'a> {
 
         let trans = font.get_transform();
         let transform = match trans {
-            FontTransform::Rotate90 => {
-                format!("rotate(90, {}, {})", x0, y0)
-            }
-            FontTransform::Rotate180 => {
-                format!("rotate(180, {}, {})", x0, y0)
-            }
-            FontTransform::Rotate270 => {
-                format!("rotate(270, {}, {})", x0, y0)
-            }
-            _ => "".to_string()
+            FontTransform::Rotate90 => format!("rotate(90, {}, {})", x0, y0),
+            FontTransform::Rotate180 => format!("rotate(180, {}, {})", x0, y0),
+            FontTransform::Rotate270 => format!("rotate(270, {}, {})", x0, y0),
+            _ => "".to_string(),
         };
-
 
         self.add_child(html! {
             <text
@@ -296,11 +302,12 @@ impl<'a> DrawingBackend for VTagWrapper<'a> {
             let mut writer = e
                 .write_header()
                 .map_err(|e| DrawingErrorKind::DrawingError(Error::PngError(e)))?;
-            writer.write_image_data(src)
+            writer
+                .write_image_data(src)
                 .map_err(|e| DrawingErrorKind::DrawingError(Error::PngError(e)))?;
         }
         let data = format!("data:image/png;base64,{}", base64::encode(&buf_inner));
-        self.add_child(html!{
+        self.add_child(html! {
             <image
                 x=pos.0
                 y=pos.1
